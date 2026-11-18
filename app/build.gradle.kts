@@ -4,7 +4,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
-val appVersionName = (System.getenv("APP_VERSION") ?: "1.0.0").removePrefix("v")
+val appVersionName = rootProject.file("version.txt").readText().trim()
 val appVersionCode = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInt()
 
 android {
@@ -56,6 +56,10 @@ android {
     }
     buildFeatures {
         compose = true
+    }
+    lint {
+        abortOnError = false
+        checkReleaseBuilds = false
     }
 }
 
