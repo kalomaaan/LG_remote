@@ -37,8 +37,8 @@ Protocol details come from the open-source
 
 ## Building
 
-Every push builds an APK with GitHub Actions. Pushing a tag like `v1.0.1` publishes a Release
-with the APK attached.
+Every push to `main` builds the APK with GitHub Actions and publishes it to the Release named
+after `version.txt`. Bump `version.txt` (e.g. `1.0.1`) to make a new release.
 
 ```
 gradle :app:assembleRelease
