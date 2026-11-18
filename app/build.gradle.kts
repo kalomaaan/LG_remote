@@ -28,12 +28,12 @@ android {
                 keyAlias = System.getenv("KEY_ALIAS")
                 keyPassword = System.getenv("KEY_PASSWORD")
             } else {
-                // Fallback so local builds still produce an installable APK.
-                val debug = getByName("debug")
-                storeFile = debug.storeFile
-                storePassword = debug.storePassword
-                keyAlias = debug.keyAlias
-                keyPassword = debug.keyPassword
+                // Bundled key so every CI build is signed the same way and updates
+                // install over each other. It's public: forks should use their own.
+                storeFile = file("signing/release.jks")
+                storePassword = "acremote-public"
+                keyAlias = "acremote"
+                keyPassword = "acremote-public"
             }
         }
     }
