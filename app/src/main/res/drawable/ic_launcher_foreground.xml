@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Simple snowflake, centered in the 108dp adaptive-icon safe zone -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group android:translateX="54" android:translateY="54">
+        <group android:rotation="0">
+            <path android:strokeColor="#FFFFFF" android:strokeWidth="4" android:strokeLineCap="round"
+                android:pathData="M0,-22 L0,22 M0,-14 L-6,-20 M0,-14 L6,-20 M0,14 L-6,20 M0,14 L6,20" />
+        </group>
+        <group android:rotation="60">
+            <path android:strokeColor="#FFFFFF" android:strokeWidth="4" android:strokeLineCap="round"
+                android:pathData="M0,-22 L0,22 M0,-14 L-6,-20 M0,-14 L6,-20 M0,14 L-6,20 M0,14 L6,20" />
+        </group>
+        <group android:rotation="120">
+            <path android:strokeColor="#FFFFFF" android:strokeWidth="4" android:strokeLineCap="round"
+                android:pathData="M0,-22 L0,22 M0,-14 L-6,-20 M0,-14 L6,-20 M0,14 L-6,20 M0,14 L6,20" />
+        </group>
+    </group>
+</vector>
