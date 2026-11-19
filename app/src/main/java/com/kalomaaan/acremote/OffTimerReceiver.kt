@@ -11,7 +11,7 @@ import android.os.Build
 class OffTimerReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val state = Store.load(context)
-        IrSender(context).send(LgCodec.CMD_OFF, state.timing)
+        IrSender(context).send(LgCodec.CMD_OFF, LgCodec.variant(state.variant))
         Store.save(context, state.copy(power = false, offTimerAt = 0L))
     }
 

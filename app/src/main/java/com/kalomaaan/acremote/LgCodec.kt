@@ -79,16 +79,60 @@ object LgCodec {
         return withChecksum(frame)
     }
 
+    /**
+     * One way of putting the frame on the air. Phones' IR drivers and LG units differ
+     * slightly, so the app lets the user try several and keep the one that works.
+     */
+    data class Variant(
+        val timing: Timing,
+        val freq: Int = CARRIER_HZ,
+        val repeats: Int = 1,
+        val tailGap: Boolean = false,
+    ) {
+        val label: String
+            get() = buildString {
+                append(if (timing == Timing.TYPE_A) "Type A" else "Type B")
+                append(" · ${freq / 1000} kHz · x$repeats")
+                if (tailGap) append(" · end gap")
+            }
+    }
+
+    val VARIANTS = listOf(
+        Variant(Timing.TYPE_A),
+        Variant(Timing.TYPE_B),
+        Variant(Timing.TYPE_A, repeats = 2),
+        Variant(Timing.TYPE_B, repeats = 2),
+        Variant(Timing.TYPE_A, tailGap = true),
+        Variant(Timing.TYPE_B, tailGap = true),
+        Variant(Timing.TYPE_A, freq = 36_000),
+        Variant(Timing.TYPE_B, freq = 36_000),
+        Variant(Timing.TYPE_A, freq = 40_000, repeats = 2),
+        Variant(Timing.TYPE_B, freq = 40_000, repeats = 2),
+        Variant(Timing.TYPE_A, repeats = 3, tailGap = true),
+        Variant(Timing.TYPE_B, repeats = 3, tailGap = true),
+    )
+
+    fun variant(index: Int): Variant = VARIANTS.getOrElse(index) { VARIANTS[0] }
+
+    private const val FRAME_GAP_US = 40_000
+
     /** Raw on/off durations in microseconds, as ConsumerIrManager.transmit expects. */
-    fun toPattern(frame: Int, timing: Timing): IntArray {
-        val out = ArrayList<Int>(2 + 28 * 2 + 1)
-        out += timing.headerMark
-        out += timing.headerSpace
-        for (i in 27 downTo 0) {
-            out += timing.bitMark
-            out += if ((frame ushr i) and 1 == 1) timing.oneSpace else timing.zeroSpace
+    fun toPattern(frame: Int, timing: Timing): IntArray = toPattern(frame, Variant(timing))
+
+    fun toPattern(frame: Int, v: Variant): IntArray {
+        val t = v.timing
+        val out = ArrayList<Int>()
+        repeat(v.repeats) { r ->
+            if (r > 0) out += FRAME_GAP_US
+            out += t.headerMark
+            out += t.headerSpace
+            for (i in 27 downTo 0) {
+                out += t.bitMark
+                out += if ((frame ushr i) and 1 == 1) t.oneSpace else t.zeroSpace
+            }
+            out += t.bitMark
         }
-        out += timing.bitMark
+        if (v.tailGap) out += FRAME_GAP_US
         return out.toIntArray()
     }
 

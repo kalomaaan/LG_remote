@@ -115,7 +115,7 @@ fun RemoteScreen() {
     }
 
     fun send(frame: Int, label: String) {
-        val err = ir.send(frame, state.timing)
+        val err = ir.send(frame, LgCodec.variant(state.variant))
         buzz(ctx)
         status = err ?: "Sent: $label  (${LgCodec.hex(frame)})"
     }
@@ -286,8 +286,19 @@ fun RemoteScreen() {
     if (showSettings) {
         SettingsDialog(
             state = state,
-            onTiming = { update(state.copy(timing = it)) },
-            onTest = { send(LgCodec.stateFrame(state.mode, state.temp, state.fan, turningOn = true), "Test (power on)") },
+            irInfo = ir.info(),
+            onUseVariant = { i ->
+                update(state.copy(variant = i))
+                status = "Using signal #${i + 1}: ${LgCodec.variant(i).label}"
+            },
+            onTry = { i, on ->
+                val v = LgCodec.variant(i)
+                val frame = if (on) LgCodec.stateFrame(state.mode, state.temp, state.fan, turningOn = true) else LgCodec.CMD_OFF
+                val err = ir.send(frame, v)
+                buzz(ctx)
+                status = err ?: "Tried #${i + 1} ${if (on) "ON" else "OFF"} (${LgCodec.hex(frame)})"
+                err ?: "Sent #${i + 1} ${if (on) "ON" else "OFF"}"
+            },
             onSync = { power ->
                 update(state.copy(power = power))
                 status = "App now thinks the AC is ${if (power) "ON" else "OFF"}"
@@ -444,27 +455,51 @@ private fun SectionTitle(title: String, hint: String) {
 @Composable
 private fun SettingsDialog(
     state: AcState,
-    onTiming: (LgCodec.Timing) -> Unit,
-    onTest: () -> Unit,
+    irInfo: String,
+    onUseVariant: (Int) -> Unit,
+    onTry: (Int, Boolean) -> String,
     onSync: (Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    var lastResult by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = { TextButton(onClick = onDismiss) { Text("Done") } },
         title = { Text("Settings") },
         text = {
-            Column {
-                Text("Signal type", fontWeight = FontWeight.Bold)
-                Text("If the AC doesn't respond, switch type and tap Test.", fontSize = 12.sp, color = KeyText.copy(alpha = 0.6f))
-                LgCodec.Timing.entries.forEach { t ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(selected = state.timing == t, onClick = { onTiming(t) })
-                        Text(t.label)
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                Text("Find a working signal", fontWeight = FontWeight.Bold)
+                Text(
+                    "1. Turn the AC ON with the real remote or the other app.\n" +
+                        "2. Point the phone at the AC from about 1 m.\n" +
+                        "3. Tap OFF on each row, one by one, waiting 3 s between.\n" +
+                        "4. When the AC turns off, tap USE on that row.",
+                    fontSize = 12.sp, color = KeyText.copy(alpha = 0.7f),
+                )
+                if (lastResult.isNotEmpty()) {
+                    Text(lastResult, fontSize = 12.sp, color = Accent, modifier = Modifier.padding(top = 4.dp))
+                }
+                Spacer(Modifier.height(6.dp))
+                LgCodec.VARIANTS.forEachIndexed { i, v ->
+                    val selected = state.variant == i
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(if (selected) Accent.copy(alpha = 0.18f) else Color.Transparent)
+                            .padding(start = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text("#${i + 1}${if (selected) "  ✓ in use" else ""}", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Text(v.label, fontSize = 11.sp, color = KeyText.copy(alpha = 0.6f))
+                        }
+                        TextButton(onClick = { lastResult = onTry(i, false) }) { Text("OFF") }
+                        TextButton(onClick = { lastResult = onTry(i, true) }) { Text("ON") }
+                        TextButton(onClick = { onUseVariant(i) }, enabled = !selected) { Text("USE") }
                     }
                 }
-                TextButton(onClick = onTest) { Text("Test: send power ON") }
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(10.dp))
                 Text("Out of sync?", fontWeight = FontWeight.Bold)
                 Text("If you used the real remote, tell the app what the AC is doing now (sends nothing).",
                     fontSize = 12.sp, color = KeyText.copy(alpha = 0.6f))
@@ -472,6 +507,9 @@ private fun SettingsDialog(
                     TextButton(onClick = { onSync(true) }) { Text("AC is ON") }
                     TextButton(onClick = { onSync(false) }) { Text("AC is OFF") }
                 }
+                Spacer(Modifier.height(10.dp))
+                Text("Phone IR info", fontWeight = FontWeight.Bold)
+                Text(irInfo, fontSize = 11.sp, color = KeyText.copy(alpha = 0.6f), fontFamily = FontFamily.Monospace)
             }
         },
     )

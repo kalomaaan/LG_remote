@@ -8,7 +8,7 @@ data class AcState(
     val temp: Int = 24,
     val fan: LgCodec.Fan = LgCodec.Fan.AUTO,
     val energySaving: Boolean = false,
-    val timing: LgCodec.Timing = LgCodec.Timing.TYPE_A,
+    val variant: Int = 0,
     val offTimerAt: Long = 0L,
 )
 
@@ -25,7 +25,7 @@ object Store {
             temp = p.getInt("temp", 24),
             fan = enumOr(p.getString("fan", null), LgCodec.Fan.AUTO),
             energySaving = p.getBoolean("energy", false),
-            timing = enumOr(p.getString("timing", null), LgCodec.Timing.TYPE_A),
+            variant = p.getInt("variant", 0),
             offTimerAt = p.getLong("offTimerAt", 0L),
         )
     }
@@ -37,7 +37,7 @@ object Store {
             .putInt("temp", s.temp)
             .putString("fan", s.fan.name)
             .putBoolean("energy", s.energySaving)
-            .putString("timing", s.timing.name)
+            .putInt("variant", s.variant)
             .putLong("offTimerAt", s.offTimerAt)
             .apply()
     }
